@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>envia.ai – envie arquivos entre celular e computador</title>
+<meta name="description" content="Conecte celular e computador com um QR code e envie arquivos direto, sem login e sem guardar nada em servidor.">
+<meta name="theme-color" content="#0f2a43">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%230f2a43'/><path d='M28 52l44-22-14 44-12-16z' fill='%23ffd84d'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eaf1f8; --surface:#ffffff; --ink:#0f2a43; --muted:#5a7189; --line:#cfdbe8;
+  --accent:#1559ff; --accent-ink:#ffffff; --mark:#ffd84d; --ok:#0b8a5b; --err:#c4352b;
+  --display:"Bricolage Grotesque",ui-rounded,"Segoe UI",system-ui,sans-serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0a1829; --surface:#122740; --ink:#eaf2fb; --muted:#93a9c0; --line:#24405e;
+        --accent:#6b9bff; --accent-ink:#06142a; --ok:#4fd1a1; --err:#ff8b80}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body);min-height:100vh;
+  padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+main{max-width:620px;margin:0 auto;padding:24px 18px 48px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.logo{width:38px;height:38px;border-radius:11px;background:var(--ink);display:grid;place-items:center}
+.logo svg{width:22px;height:22px}
+header b{font:800 24px var(--display);letter-spacing:-.02em}
+h1{font:800 clamp(30px,7vw,44px)/1.05 var(--display);letter-spacing:-.03em;margin:0 0 12px}
+h1 mark{background:linear-gradient(transparent 55%,var(--mark) 55%);color:inherit}
+p.lead{color:var(--muted);margin:0 0 24px;max-width:46ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px}
+.panel+.panel{margin-top:14px}
+button,.btn{font:600 16px var(--body);border:0;border-radius:12px;padding:13px 18px;cursor:pointer;
+  background:var(--accent);color:var(--accent-ink);min-height:46px}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,.drop:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input.code{font:800 22px var(--display);letter-spacing:.25em;text-transform:uppercase;text-align:center;
+  width:11ch;padding:10px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+small,.hint{color:var(--muted);font-size:14px}
+.hidden{display:none!important}
+.qrbox{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+#qr{background:#fff;padding:10px;border-radius:14px;line-height:0}
+.codetiles{display:flex;gap:6px;margin:6px 0 10px}
+.codetiles span{width:42px;height:54px;display:grid;place-items:center;font:800 30px var(--display);
+  background:var(--ink);color:var(--mark);border-radius:10px}
+.status{display:flex;align-items:center;gap:8px;font-weight:600}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--mark);box-shadow:0 0 0 0 var(--mark)}
+.dot.ok{background:var(--ok)} .dot.wait{animation:pulse 1.6s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 9px transparent}}
+@media (prefers-reduced-motion:reduce){.dot.wait{animation:none}}
+.drop{border:2px dashed var(--line);border-radius:16px;padding:30px 16px;text-align:center;cursor:pointer;
+  transition:background .15s,border-color .15s}
+.drop.over{background:color-mix(in srgb,var(--accent) 10%,transparent);border-color:var(--accent)}
+.drop b{display:block;font:800 20px var(--display)}
+textarea{width:100%;min-height:70px;border-radius:12px;border:1px solid var(--line);background:var(--bg);
+  color:var(--ink);padding:10px;font:inherit;resize:vertical;margin-top:10px}
+ul{list-style:none;margin:0;padding:0}
+li.item{border-top:1px solid var(--line);padding:12px 0;display:grid;gap:6px}
+li.item:first-child{border-top:0}
+.name{font-weight:600;word-break:break-all}
+.meta{color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.bar{height:6px;border-radius:6px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .1s}
+.txt{white-space:pre-wrap;word-break:break-word;background:var(--bg);padding:10px;border-radius:10px}
+a.dl{color:var(--accent);font-weight:700}
+.err{color:var(--err);font-weight:600;margin-top:12px}
+footer{margin-top:28px;color:var(--muted);font-size:13px}
+h2{font:800 20px var(--display);margin:0 0 4px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="logo"><svg viewBox="0 0 100 100"><path d="M18 54l64-30-22 58-14-22z" fill="#ffd84d"/></svg></div>
+    <b>envia.ai</b>
+  </header>
+
+  <!-- INÍCIO -->
+  <section id="home">
+    <h1>Do celular pro computador, <mark>sem WhatsApp</mark>.</h1>
+    <p class="lead">Crie uma conexão, escaneie o QR code com o outro aparelho e envie arquivos nos dois sentidos. Sem login, sem instalar nada.</p>
+    <div class="panel">
+      <button id="btnHost">Criar conexão</button>
+      <p class="hint" style="margin:14px 0 8px">Já tem um código? Digite aqui:</p>
+      <div class="row">
+        <input class="code" id="codeIn" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Código de 6 caracteres" placeholder="••••••">
+        <button class="ghost" id="btnJoin">Conectar</button>
+      </div>
+      <div id="homeErr" class="err hidden"></div>
+    </div>
+  </section>
+
+  <!-- AGUARDANDO (quem criou a conexão) -->
+  <section id="wait" class="hidden">
+    <div class="panel">
+      <h2>Conecte o outro aparelho</h2>
+      <p class="hint" style="margin:0 0 16px">Escaneie o QR code com a câmera, ou abra este site no outro aparelho e digite o código.</p>
+      <div class="qrbox">
+        <div id="qr" aria-label="QR code de conexão"></div>
+        <div>
+          <div class="codetiles" id="tiles" aria-label="Código"></div>
+          <div class="row">
+            <button class="ghost" id="btnCopyLink">Copiar link</button>
+            <button class="ghost" id="btnCancel">Cancelar</button>
+          </div>
+          <div class="status" style="margin-top:14px"><span class="dot wait"></span><span>Aguardando o outro aparelho…</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONECTANDO -->
+  <section id="joining" class="hidden">
+    <div class="panel"><div class="status"><span class="dot wait"></span><span>Conectando…</span></div></div>
+  </section>
+
+  <!-- SESSÃO -->
+  <section id="session" class="hidden">
+    <div class="panel">
+      <div class="status"><span class="dot ok"></span><span id="sessTxt">Conectado</span>
+        <span style="flex:1"></span><button class="ghost" id="btnEnd" style="min-height:38px;padding:6px 12px">Encerrar</button></div>
+    </div>
+    <div class="panel">
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Escolher arquivos para enviar">
+        <b>Toque para escolher arquivos</b>
+        <small>ou arraste para cá (no computador)</small>
+        <input type="file" id="file" multiple hidden>
+      </div>
+      <textarea id="txt" placeholder="Ou escreva um texto para enviar…"></textarea>
+      <div class="row" style="margin-top:10px"><button id="btnTxt">Enviar texto</button></div>
+    </div>
+    <div class="panel" id="logPanel">
+      <h2>Transferências</h2>
+      <ul id="log"></ul>
+      <small id="empty">Nada por aqui ainda.</small>
+    </div>
+  </section>
+
+  <footer>Os arquivos vão direto de um aparelho para o outro, criptografados. O envia.ai não guarda nada. Mantenha esta aba aberta durante o envio.</footer>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(() => {
+  const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const PREFIX = 'envia-ai-';
+  const CHUNK = 32 * 1024;
+  const $ = id => document.getElementById(id);
+  const views = ['home', 'wait', 'joining', 'session'];
+  let peer = null, conn = null, code = '', cancelled = false;
+  const incoming = new Map();
+
+  const show = v => views.forEach(x => $(x).classList.toggle('hidden', x !== v));
+  const genCode = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), b => ALPHA[b % ALPHA.length]).join('');
+  const fmt = n => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const homeErr = msg => { const e = $('homeErr'); e.textContent = msg; e.classList.toggle('hidden', !msg); };
+
+  function reset(msg) {
+    cancelled = true;
+    try { conn && conn.close(); } catch (e) {}
+    try { peer && peer.destroy(); } catch (e) {}
+    peer = conn = null; incoming.clear();
+    $('log').innerHTML = ''; $('empty').classList.remove('hidden');
+    history.replaceState(null, '', location.pathname);
+    show('home'); homeErr(msg || '');
+  }
+
+  /* ---------- Quem cria a conexão ---------- */
+  function startHost() {
+    cancelled = false; homeErr('');
+    code = genCode();
+    peer = new Peer(PREFIX + code);
+    peer.on('open', () => {
+      const url = location.origin + location.pathname + '#' + code;
+      $('qr').innerHTML = '';
+      new QRCode($('qr'), { text: url, width: 176, height: 176, colorDark: '#0f2a43', colorLight: '#ffffff' });
+      $('tiles').innerHTML = '';
+      [...code].forEach(c => { const s = document.createElement('span'); s.textContent = c; $('tiles').appendChild(s); });
+      $('btnCopyLink').onclick = async () => {
+        try { await navigator.clipboard.writeText(url); $('btnCopyLink').textContent = 'Link copiado!'; }
+        catch (e) { prompt('Copie o link:', url); }
+      };
+      show('wait');
+    });
+    peer.on('connection', c => {
+      if (conn) { c.on('open', () => c.close()); return; } // só um aparelho por código
+      setupConn(c);
+    });
+    peer.on('error', e => {
+      if (e.type === 'unavailable-id') { try { peer.destroy(); } catch (_) {} startHost(); }
+      else reset('Não foi possível criar a conexão (' + e.type + '). Tente de novo.');
+    });
+  }
+
+  /* ---------- Quem entra com o código ---------- */
+  function startJoin(raw) {
+    const c = (raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (c.length !== 6) { homeErr('O código tem 6 caracteres.'); return; }
+    cancelled = false; homeErr(''); show('joining');
+    peer = new Peer();
+    const timer = setTimeout(() => reset('Não deu para conectar. Confira o código e se os dois aparelhos têm internet.'), 20000);
+    peer.on('open', () => {
+      const cn = peer.connect(PREFIX + c, { reliable: true });
+      cn.on('open', () => clearTimeout(timer));
+      setupConn(cn);
+    });
+    peer.on('error', e => {
+      clearTimeout(timer);
+      reset(e.type === 'peer-unavailable' ? 'Código não encontrado. Confira os 6 caracteres.' : 'Erro de conexão (' + e.type + ').');
+    });
+  }
+
+  /* ---------- Conexão estabelecida ---------- */
+  function setupConn(c) {
+    conn = c;
+    const open = () => { $('sessTxt').textContent = 'Conectado'; show('session'); };
+    c.open ? open() : c.on('open', open);
+    c.on('data', onData);
+    c.on('close', () => { if (!cancelled) reset('A conexão foi encerrada.'); });
+    c.on('error', () => { if (!cancelled) reset('A conexão caiu. Crie uma nova.'); });
+  }
+
+  /* ---------- Lista de transferências ---------- */
+  function addItem(kind, title, sub) {
+    $('empty').classList.add('hidden');
+    const li = document.createElement('li'); li.className = 'item';
+    const n = document.createElement('div'); n.className = 'name'; n.textContent = title;
+    const bar = document.createElement('div'); bar.className = 'bar'; bar.innerHTML = '<i></i>';
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const s = document.createElement('span'); s.textContent = sub;
+    const act = document.createElement('span');
+    meta.append(s, act); li.append(n, bar, meta);
+    $('log').prepend(li);
+    return { li, bar: bar.firstChild, status: s, act, barWrap: bar };
+  }
+
+  /* ---------- Envio ---------- */
+  async function sendFile(file) {
+    if (!conn || !conn.open) return;
+    const id = Math.random().toString(36).slice(2);
+    const it = addItem('out', file.name, 'Enviando · ' + fmt(file.size));
+    conn.send({ t: 'meta', id, name: file.name, size: file.size, type: file.type });
+    let off = 0;
+    try {
+      while (off < file.size) {
+        while (conn.dataChannel && conn.dataChannel.bufferedAmount > 4e6) await sleep(25);
+        const buf = await file.slice(off, off + CHUNK).arrayBuffer();
+        conn.send({ t: 'chunk', id, d: buf });
+        off += buf.byteLength;
+        it.bar.style.width = (off / file.size * 100) + '%';
+      }
+      conn.send({ t: 'end', id });
+      it.status.textContent = 'Enviado · ' + fmt(file.size);
+      it.bar.style.width = '100%';
+    } catch (e) { it.status.textContent = 'Falhou ao enviar'; }
+  }
+  function sendText() {
+    const v = $('txt').value.trim();
+    if (!v || !conn) return;
+    conn.send({ t: 'text', v });
+    const it = addItem('out', 'Texto enviado', '');
+    it.barWrap.remove(); it.status.textContent = 'Enviado';
+    const p = document.createElement('div'); p.className = 'txt'; p.textContent = v; it.li.insertBefore(p, it.li.querySelector('.meta'));
+    $('txt').value = '';
+  }
+
+  /* ---------- Recebimento ---------- */
+  function onData(m) {
+    if (!m || !m.t) return;
+    if (m.t === 'meta') {
+      const it = addItem('in', m.name, 'Recebendo · ' + fmt(m.size));
+      incoming.set(m.id, { ...m, parts: [], got: 0, it });
+    } else if (m.t === 'chunk') {
+      const f = incoming.get(m.id); if (!f) return;
+      f.parts.push(m.d); f.got += m.d.byteLength;
+      f.it.bar.style.width = (f.size ? f.got / f.size * 100 : 100) + '%';
+    } else if (m.t === 'end') {
+      const f = incoming.get(m.id); if (!f) return;
+      const url = URL.createObjectURL(new Blob(f.parts, { type: f.type || 'application/octet-stream' }));
+      const a = document.createElement('a'); a.className = 'dl'; a.href = url; a.download = f.name; a.textContent = 'Baixar';
+      f.it.status.textContent = 'Recebido · ' + fmt(f.size);
+      f.it.bar.style.width = '100%'; f.it.act.appendChild(a);
+      f.parts = []; incoming.delete(m.id);
+    } else if (m.t === 'text') {
+      const it = addItem('in', 'Texto recebido', 'Recebido');
+      it.barWrap.remove();
+      const p = document.createElement('div'); p.className = 'txt'; p.textContent = m.v;
+      it.li.insertBefore(p, it.li.querySelector('.meta'));
+      const b = document.createElement('a'); b.className = 'dl'; b.href = '#'; b.textContent = 'Copiar';
+      b.onclick = async e => { e.preventDefault(); try { await navigator.clipboard.writeText(m.v); b.textContent = 'Copiado!'; } catch (_) {} };
+      it.act.appendChild(b);
+    }
+  }
+
+  /* ---------- Eventos da interface ---------- */
+  $('btnHost').onclick = startHost;
+  $('btnJoin').onclick = () => startJoin($('codeIn').value);
+  $('codeIn').addEventListener('keydown', e => { if (e.key === 'Enter') startJoin($('codeIn').value); });
+  $('btnCancel').onclick = () => reset();
+  $('btnEnd').onclick = () => reset();
+  $('btnTxt').onclick = sendText;
+  const drop = $('drop'), fileIn = $('file');
+  drop.onclick = () => fileIn.click();
+  drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileIn.click(); } };
+  fileIn.onchange = async () => { for (const f of fileIn.files) await sendFile(f); fileIn.value = ''; };
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', async e => { for (const f of e.dataTransfer.files) await sendFile(f); });
+  window.addEventListener('beforeunload', e => { if (conn) { e.preventDefault(); e.returnValue = ''; } });
+
+  // Abriu pelo QR code: o código vem depois do # na URL
+  const fromHash = location.hash.replace('#', '');
+  if (fromHash.length === 6) startJoin(fromHash);
+})();
+</script>
+</body>
+</html>
